@@ -1,0 +1,17 @@
+{
+  "Name": "BetterHeadlights",
+  "DLL": "BetterHeadlights.dll",
+  "Enabled": true,
+  "Version": "1.0.01",
+  "Description": "Add some configuration and power to the Mech lights",
+  "Author": "gnivler",
+  "Settings": {
+    // 4 brightness settings use CAPS
+    // LOW MID HIGH SUPER
+    "Intensity": "MID",
+    // width of light cone, vanilla is 30 degrees
+    "Angle": 45,
+    // make the light cast further
+    "ExtraRange": true
+  }
+} 
