@@ -10,153 +10,171 @@ using Harmony;
 using Newtonsoft.Json;
 using UnityEngine;
 
+// ReSharper disable UnusedMember.Global
 // ReSharper disable InconsistentNaming
 
-public static class Core
+namespace BetterHeadlights
 {
-    private static Settings settings;
-    private static bool headlightsOn = true;
-
-    private static Dictionary<string, float> IntensityMap = new Dictionary<string, float>
+    public static class Core
     {
-        {"LOW", 200_000f},
-        {"MID", 400_000f},
-        {"HIGH", 800_000},
-        {"SUPER", 2_000_000}
-    };
+        private static Settings settings;
+        private static bool headlightsOn = true;
 
-    public static void Init(string modDir, string settings)
-    {
-        // read settings
-        try
+        private static readonly Dictionary<string, float> IntensityMap = new Dictionary<string, float>
         {
-            Core.settings = JsonConvert.DeserializeObject<Settings>(settings);
-            Core.settings.modDirectory = modDir;
-        }
-        catch (Exception)
+            {"LOW", 200_000f},
+            {"MID", 400_000f},
+            {"HIGH", 800_000f},
+            {"SUPER", 2_000_000f},
+        };
+
+        public static void Init(string modSettings)
         {
-            Core.settings = new Settings();
-        }
-
-        Log("Starting up");
-        var harmony = HarmonyInstance.Create("ca.gnivler.BattleTech.BetterHeadlights");
-        harmony.PatchAll(Assembly.GetExecutingAssembly());
-    }
-
-    private static void Log(string input)
-    {
-        //FileLog.Log($"[BetterHeadlights] {(string.IsNullOrEmpty(input) ? "EMPTY" : input)}");
-    }
-
-    [HarmonyPatch(typeof(CombatGameState), "Update")]
-    public static class CombatGameState_Update_Patch
-    {
-        public static void Postfix()
-        {
-            var hotkeyH = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
-                          (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKeyDown(KeyCode.H);
-            if (hotkeyH)
-                headlightsOn = !headlightsOn;
-        }
-    }
-
-    [HarmonyPatch(typeof(LightSpawner), "SpawnLight")]
-    public static class LightSpawner_SpawnLight_Patch
-    {
-        [HarmonyPriority(Priority.Low)]
-        public static bool Prefix(LightSpawner __instance)
-        {
-            var GO = (Component) __instance;
-
-            //GO.GetComponentsInChildren<Component>().Do(x => Log(x.ToString()));
-            // limited options for determining if this is a mech
-            return GO.GetComponentsInChildren<Component>()
-                .Any(x => Regex.IsMatch(x.name.ToLower(), @"torso|shoulder"));
-        }
-
-        public static IEnumerable<CodeInstruction> Transpiler(
-            IEnumerable<CodeInstruction> instructions, ILGenerator generator)
-        {
-            var codes = instructions.ToList();
-
-            var radiusTarget = codes.FindLastIndex(x => x.opcode == OpCodes.Stfld && x.operand == AccessTools.Field(typeof(BTLight), "lightType")) + 1;
-            var intensityTarget = codes.FindLastIndex(x => x.opcode == OpCodes.Stfld && x.operand == AccessTools.Field(typeof(BTLight), "radius")) + 1;
-            var spotTarget = codes.FindLastIndex(x => x.opcode == OpCodes.Stfld && x.operand == AccessTools.Field(typeof(BTLight), "spotlightAngleInner")) + 1;
-
-            // replace radius (range) assignment
-            for (var i = radiusTarget + 2; i < radiusTarget + 5; i++)
+            // read settings
+            try
             {
-                codes[i].opcode = OpCodes.Nop;
+                settings = JsonConvert.DeserializeObject<Settings>(modSettings);
+            }
+            catch (Exception)
+            {
+                settings = new Settings();
             }
 
-            // vanilla is 60
-            codes[radiusTarget + 5].opcode = OpCodes.Ldc_R4;
-            codes[radiusTarget + 5].operand = settings.ExtraRange ? 10_000f : 60f;
-
-            // spot outer
-            codes[spotTarget + 2].opcode = OpCodes.Ldc_R4;
-            codes[spotTarget + 2].operand = settings.Angle;
-
-            // replace intensity assignment
-            for (var i = intensityTarget + 2; i < intensityTarget + 6; i++)
-            {
-                codes[i].opcode = OpCodes.Nop;
-            }
-
-            codes[intensityTarget + 5].opcode = OpCodes.Ldc_R4;
-            codes[intensityTarget + 5].operand = IntensityMap[settings.Intensity];
-
-            // spot outer
-            codes[spotTarget + 2].opcode = OpCodes.Ldc_R4;
-            codes[spotTarget + 2].operand = settings.Angle;
-            return codes.AsEnumerable();
+            Log("Starting up");
+            var harmony = HarmonyInstance.Create("ca.gnivler.BattleTech.BetterHeadlights");
+            harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
-    }
 
-    // light toggling
-    [HarmonyPatch(typeof(PilotableActorRepresentation), "Update")]
-    public static class PilotableActorRepresentation_Update_Patch
-    {
-        private static List<Component> lightList = new List<Component>();
-
-        public static void Postfix(PilotableActorRepresentation __instance)
+        private static void Log(object input)
         {
-            if (__instance.parentActor is Mech mech)
-            {
-                var lights = __instance.gameObject.GetComponentsInChildren<Component>()
-                    .Where(x => x.name.Contains("headlight"))
-                    .Where(x => mech.pilot.Team.LocalPlayerControlsTeam).ToList();
+            //FileLog.Log($"[BetterHeadlights] {input}");
+        }
 
-                if (headlightsOn && lightList.Count != 0)
+        [HarmonyPatch(typeof(CombatGameState), "Update")]
+        public static class CombatGameState_Update_Patch
+        {
+            public static void Postfix()
+            {
+                var hotkeyH = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
+                              (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) &&
+                              Input.GetKeyDown(KeyCode.H);
+                if (hotkeyH)
                 {
-                    foreach (var disabledLight in lightList)
-                    {
-                        disabledLight.gameObject.SetActive(true);
-                    }
-                }
-                else if (!headlightsOn)
-                {
-                    foreach (var enabledLight in lights)
-                    {
-                        // cache the light components because they vanish from 
-                        // the child component list for reasons unknown to me
-                        if (!lightList.Contains(enabledLight))
-                            lightList.Add(enabledLight);
-                        enabledLight.gameObject.SetActive(false);
-                    }
+                    Log("Toggling headlights");
+                    headlightsOn = !headlightsOn;
                 }
             }
         }
-    }
 
-    public class Settings
-    {
-        public bool enableDebug;
-        public string modDirectory;
+        [HarmonyPatch(typeof(LightSpawner), "SpawnLight")]
+        public class LightSpawner_SpawnLight_Patch
+        {
+            [HarmonyPriority(Priority.Low)]
+            public static bool Prefix(LightSpawner __instance)
+            {
+                var GO = (Component) __instance;
 
-        public string Range;
-        public bool ExtraRange;
-        public string Intensity;
-        public float Angle;
+                // how this info was found:
+                //GO.GetComponentsInChildren<Component>().Do(x => Log(x.ToString()));
+                // we want to return true and let the transpiler go if it matches
+                // limited options for determining if this is a mech light
+                return GO.GetComponentsInChildren<Component>()
+                    .Any(x => Regex.IsMatch(x.name.ToLower(), @"torso|shoulder"));
+            }
+
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var codes = instructions.ToList();
+                var spawnedLightField = AccessTools.Field(typeof(LightSpawner), "spawnedLight");
+                var radiusField = AccessTools.Field(typeof(BTLight), "radius");
+                var intensityField = AccessTools.Field(typeof(BTLight), "intensity");
+                var outerAngleField = AccessTools.Field(typeof(BTLight), "spotlightAngleOuter");
+
+                // just setup the field values and insert at the end
+                var setupCodes = new List<CodeInstruction>();
+                if (settings.ExtraRange)
+                {
+                    Log("Applying ExtraRange");
+                    SetRange(setupCodes, spawnedLightField, radiusField);
+                }
+
+                if (settings.Intensity != "VANILLA" &&
+                    IntensityMap.ContainsKey(settings.Intensity))
+                {
+                    Log("Applying Intensity");
+                    SetIntensity(setupCodes, spawnedLightField, intensityField);
+                }
+
+                Log("Applying Angle");
+                SetAngle(setupCodes, spawnedLightField, outerAngleField);
+                codes.InsertRange(codes.Count - 1, setupCodes);
+                return codes.AsEnumerable();
+            }
+
+            private static void SetAngle(List<CodeInstruction> setupCodes, FieldInfo spawnedLightField, FieldInfo outerAngleField)
+            {
+                setupCodes.InsertRange(0, new[]
+                {
+                    new CodeInstruction(OpCodes.Ldarg_0),
+                    new CodeInstruction(OpCodes.Ldfld, spawnedLightField),
+                    new CodeInstruction(OpCodes.Ldc_R4, settings.Angle),
+                    new CodeInstruction(OpCodes.Stfld, outerAngleField)
+                });
+            }
+
+            private static void SetIntensity(List<CodeInstruction> setupCodes, FieldInfo spawnedLight, FieldInfo intensityField)
+            {
+                setupCodes.InsertRange(0, new[]
+                {
+                    new CodeInstruction(OpCodes.Ldarg_0),
+                    new CodeInstruction(OpCodes.Ldfld, spawnedLight),
+                    new CodeInstruction(OpCodes.Ldc_R4, IntensityMap[settings.Intensity]),
+                    new CodeInstruction(OpCodes.Stfld, intensityField)
+                });
+            }
+
+            private static void SetRange(List<CodeInstruction> setupCodes, FieldInfo spawnedLightField, FieldInfo radiusField)
+            {
+                setupCodes.InsertRange(0, new[]
+                {
+                    new CodeInstruction(OpCodes.Ldarg_0),
+                    new CodeInstruction(OpCodes.Ldfld, spawnedLightField),
+                    new CodeInstruction(OpCodes.Ldc_R4, 10_000f),
+                    new CodeInstruction(OpCodes.Stfld, radiusField)
+                });
+            }
+        }
+
+        // light toggling
+        [HarmonyPatch(typeof(PilotableActorRepresentation), "Update")]
+        public static class PilotableActorRepresentation_Update_Patch
+        {
+            public static void Postfix(PilotableActorRepresentation __instance)
+            {
+                if (__instance.parentActor is Mech mech)
+                {
+                    var lights = __instance.gameObject.GetComponentsInChildren<Component>(true)
+                        .Where(x => mech.pilot.Team.LocalPlayerControlsTeam)
+                        .Where(x => x.name.Contains("headlight")).ToList();
+
+                    if (!lights.Any())
+                    {
+                        return;
+                    }
+
+                    foreach (var light in lights)
+                    {
+                        light.gameObject.SetActive(headlightsOn);
+                    }
+                }
+            }
+        }
+
+        private class Settings
+        {
+            public bool ExtraRange = true;
+            public string Intensity = "MID";
+            public float Angle = 45;
+        }
     }
 }
