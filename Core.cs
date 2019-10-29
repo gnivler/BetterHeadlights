@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Reflection;
 using BattleTech;
+using BattleTech.Data;
 using BattleTech.Rendering;
 using Harmony;
+using HBS;
 using Newtonsoft.Json;
 using UnityEngine;
+using Object = System.Object;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable InconsistentNaming
@@ -45,7 +49,7 @@ namespace BetterHeadlights
 
         private static void Log(object input)
         {
-            FileLog.Log($"[BetterHeadlights] {input}");
+            FileLog.Log($"[BetterHeadlights] {input ?? "null"}");
         }
 
         // adjust headlight settings
@@ -62,22 +66,21 @@ namespace BetterHeadlights
                     return;
                 }
 
-                Log($"adjusting: {__instance.name}");
+                Log($"adjusting: {__instance.name} ({__instance.transform.parent.name})");
                 if (settings.ExtraRange)
                 {
-                    //Log("Applying ExtraRange");
                     ___spawnedLight.radius = extraRadius;
                 }
 
                 if (settings.Intensity != "VANILLA" &&
                     IntensityMap.ContainsKey(settings.Intensity))
                 {
-                    //Log("Applying Intensity");
                     ___spawnedLight.intensity = IntensityMap[settings.Intensity];
                 }
 
                 ___spawnedLight.spotlightAngleOuter = settings.Angle;
-                //Log("Applying Angle");
+
+                ___spawnedLight.volumetricsMultiplier = 1000f;
             }
         }
 
@@ -98,26 +101,57 @@ namespace BetterHeadlights
             }
         }
 
-        // TODO this doesn't make the lights appear 
-        [HarmonyPatch(typeof(VehicleRepresentation), "Update")]
-        public static class VehicleRepresentation_Update_Patch
+
+        [HarmonyPatch(typeof(PilotableActorRepresentation), "Update")]
+        public static class PilotableActorRepresentation_Update_Patch
         {
-            public static void Postfix(VehicleRepresentation __instance)
+            public static void Postfix(PilotableActorRepresentation __instance)
             {
                 try
                 {
-                    var lights = __instance.GetComponentsInChildren<BTLight>(true);
-                    if (!lights.Any())
+                    // only want to patch when the mech is a blip
+                    var localPlayerTeam = UnityGameInstance.BattleTechGame.Combat.LocalPlayerTeam;
+                    var visibilityLevel = localPlayerTeam.VisibilityToTarget(__instance.parentActor);
+                    if (visibilityLevel == VisibilityLevel.None || visibilityLevel == VisibilityLevel.LOSFull)
                     {
-                        Log("No lights");
                         return;
                     }
 
-                    foreach (var light in lights)
+                    Log($"{__instance.parentActor.DisplayName,-40}: {visibilityLevel.ToString()}");
+                    var lights = __instance.VisibleLights;
+
+                    // there is one (of four) parent transforms which is not active
+                    // is has to be enabled for the lights to be visible but that makes the whole vee appear
+                    // so enable the transform but disable its children so it stays invisible but for lights?
+                    if (__instance is VehicleRepresentation)
                     {
-                        light.gameObject.SetActive(true);
+                        foreach (var light in lights)
+                        {
+                            var transform = light.GetComponentsInParent<Transform>(true)
+                                .FirstOrDefault(t => !t.gameObject.activeSelf);
+                            if (transform == null)
+                            {
+                                return;
+                            }
+
+                            // found the inactive transform, activate it but disable the mesh
+                            transform.gameObject.SetActive(true);
+                            foreach (var child in transform.GetComponentsInChildren<Component>())
+                            {
+                                if (child is SkinnedMeshRenderer skinnedMesh)
+                                {
+                                    skinnedMesh.enabled = false;
+                                }
+                            }
+
+                            light.enabled = true;
+                        }
                     }
+
+                    //Log(timer.Elapsed);
                 }
+
+
                 catch (Exception ex)
                 {
                     Log(ex);
@@ -131,37 +165,28 @@ namespace BetterHeadlights
         {
             public static void Postfix(MechRepresentation __instance)
             {
-                // player headlights are controlled
+                var lights = __instance.GetComponentsInChildren<BTLight>(true);
+                lights.Do(Log);
+                // player controlled lights
                 if (__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam)
                 {
-                    __instance.ToggleHeadlights(headlightsOn);
+                    lights.Do(x => x.enabled = headlightsOn);
                     return;
                 }
 
-                // any enemy within sensor range of any friendly has lights on
-                var combat = __instance.parentCombatant.Combat;
-                var friendlies = combat.AllActors.Where(actor => actor.team.LocalPlayerControlsTeam).ToList();
-                foreach (var friendly in friendlies)
-                {
-                    var enemies = friendly.GetDetectedEnemyUnits()
-                        .Where(enemy => friendly.VisibilityToTargetUnit(enemy) >= VisibilityLevel.Blip0Minimum)
-                        .ToList();
-                    if (enemies.Count <= 0)
-                    {
-                        continue;
-                    }
-
-                    // it's an enemy mech, lights on
-                    __instance.ToggleHeadlights(true);
-                }
+                // enemy mech, lights on
+                lights.Do(x => x.enabled = true);
+                //lights = __instance.GetComponentsInChildren<Component>(true).ToList();
+                //lights.Where(c => c.name.Contains("light")).Do(x => x.gameObject.SetActive(headlightsOn));
+                // player headlights are controlled
             }
         }
     }
-}
 
-public class Settings
-{
-    public bool ExtraRange = true;
-    public string Intensity = "MID";
-    public float Angle = 45;
+    public class Settings
+    {
+        public bool ExtraRange = true;
+        public string Intensity = "MID";
+        public float Angle = 45;
+    }
 }
