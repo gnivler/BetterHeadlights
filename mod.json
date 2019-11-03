@@ -2,12 +2,13 @@
   "Name": "BetterHeadlights",
   "DLL": "BetterHeadlights.dll",
   "Enabled": true,
-  "Version": "1.1",
+  "Version": "2.0",
   "Description": "Add some configuration and power to the Mech lights",
   "Author": "gnivler",
   "Settings": {
     "Intensity": "MID",
     "Angle": 45,
-    "ExtraRange": true
+    "ExtraRange": true,
+    "BlipLights": true
   }
 } 
