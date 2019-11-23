@@ -2,7 +2,7 @@
   "Name": "BetterHeadlights",
   "DLL": "BetterHeadlights.dll",
   "Enabled": true,
-  "Version": "2.0",
+  "Version": "2.0.2",
   "Description": "Add some configuration and power to the Mech lights",
   "Author": "gnivler",
   "Settings": {
