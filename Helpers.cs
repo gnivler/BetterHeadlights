@@ -1,8 +1,8 @@
 using BattleTech.Rendering;
+using UnityEngine;
 using static BetterHeadlights.Core;
 
 namespace BetterHeadlights
-
 {
     public class Helpers
     {
@@ -12,7 +12,8 @@ namespace BetterHeadlights
                 settings.ExtraRange && !isBlip)
             {
                 Log("ExtraRange");
-                spawnedLight.radius = 5000f;
+                spawnedLight.radius = 500f;
+                spawnedLight.enabled = false;
             }
         }
 
