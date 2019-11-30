@@ -32,14 +32,6 @@ namespace BetterHeadlights
                         var lighTrackers = new List<LightTracker>();
                         foreach (var transform in lightTransforms)
                         {
-                            // jump jets are shoulder transforms with no lights, so we omit them
-                            //var btLight = transform.GetComponentInChildren<BTLight>();
-                            //if (btLight == null)
-                            //{
-                            //    Log("no BTLight");
-                            //    continue;
-                            //}
-
                             lighTrackers.Add(new LightTracker()
                             {
                                 spawnedLight = transform.GetComponentInChildren<BTLight>(true),
@@ -68,20 +60,18 @@ namespace BetterHeadlights
                 if (__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam)
                 {
                     // Where clause should return Count 0 if the lights are already set, skipping SetActive()
+                    // the goal being to do nothing unless necessary
                     foreach (var tracker in lightTrackers.Where(x => x.transform.gameObject.activeSelf != headlightsOn))
                     {
                         Log("SetActive: " + headlightsOn);
                         tracker.transform.gameObject.SetActive(headlightsOn);
-                        //__instance.GetComponentsInChildren<BTLight>(true).Do(x => x.gameObject.SetActive(false));
                         tracker.adjusted = !headlightsOn;
                     }
 
                     foreach (var tracker in lightTrackers.Where(x => !x.adjusted && x.spawnedLight != null))
                     {
-                        // mark true? so they get re-adjusted when turned back on
                         Helpers.SetRange(tracker.spawnedLight, false);
                         Helpers.SetProfile(tracker.spawnedLight, false);
-                        tracker.spawnedLight.RefreshLightSettings(true);
                         tracker.adjusted = true;
                     }
                 }
@@ -105,7 +95,6 @@ namespace BetterHeadlights
                                 Log("Enemy");
                                 Helpers.SetRange(tracker.spawnedLight, true);
                                 Helpers.SetProfile(tracker.spawnedLight, true);
-                                tracker.spawnedLight.RefreshLightSettings(true);
                                 tracker.adjusted = true;
                             });
                     }

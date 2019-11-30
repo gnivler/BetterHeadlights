@@ -6,19 +6,19 @@ namespace BetterHeadlights
 {
     public class Helpers
     {
-        internal static void SetRange(BTLight spawnedLight, bool blip)
+        internal static void SetRange(BTLight spawnedLight, bool isBlip)
         {
-            if (settings.BlipLightsExtraRange && blip ||
-                settings.ExtraRange && !blip)
+            if (settings.BlipLightsExtraRange && isBlip ||
+                settings.ExtraRange && !isBlip)
             {
                 Log("ExtraRange");
-                spawnedLight.radius = 500f;
+                spawnedLight.radius = 5000f;
             }
         }
 
-        internal static void SetProfile(BTLight spawnedLight, bool blip)
+        internal static void SetProfile(BTLight spawnedLight, bool isBlip)
         {
-            if (blip)
+            if (isBlip)
             {
                 if (settings.Intensity != "VANILLA" &&
                     IntensityMap.ContainsKey(settings.BlipIntensity))

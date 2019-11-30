@@ -3,7 +3,7 @@
   "DLL": "BetterHeadlights.dll",
   "Enabled": true,
   "Version": "2.1.4",
-  "Description": "Add some configuration and power to the Mech lights",
+  "Description": "Change how Mech, vehicle and radar-blip lights operate",
   "Author": "gnivler",
   "Settings": {
     "Angle": 45,
@@ -13,4 +13,4 @@
     "BlipIntensity": "MID",
     "BlipExtraRange": true
   }
-} 
+}
