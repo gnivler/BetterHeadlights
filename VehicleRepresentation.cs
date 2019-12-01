@@ -47,7 +47,7 @@ namespace BetterHeadlights
                             {
                                 new LightTracker
                                 {
-                                    transform = transform,
+                                    Transform = transform,
                                 }
                             });
                             break;
@@ -63,7 +63,7 @@ namespace BetterHeadlights
                 }
 
                 // grab the inactive transform, activate it but disable the mesh
-                transform = trackerMap[__instance.parentVehicle.GUID].FirstOrDefault()?.transform;
+                transform = trackerMap[__instance.parentVehicle.GUID].FirstOrDefault()?.Transform;
                 if (transform != null)
                 {
                     transform.gameObject.SetActive(true);

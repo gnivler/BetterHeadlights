@@ -1,19 +1,20 @@
 using BattleTech.Rendering;
-using UnityEngine;
 using static BetterHeadlights.Core;
 
 namespace BetterHeadlights
 {
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class Helpers
     {
+        internal const float ExtraRange = 500f;
+
         internal static void SetRange(BTLight spawnedLight, bool isBlip)
         {
             if (settings.BlipLightsExtraRange && isBlip ||
                 settings.ExtraRange && !isBlip)
             {
                 Log("ExtraRange");
-                spawnedLight.radius = 500f;
-                spawnedLight.enabled = false;
+                spawnedLight.radius = ExtraRange;
             }
         }
 
@@ -21,8 +22,7 @@ namespace BetterHeadlights
         {
             if (isBlip)
             {
-                if (settings.Intensity != "VANILLA" &&
-                    IntensityMap.ContainsKey(settings.BlipIntensity))
+                if (IntensityMap.ContainsKey(settings.BlipIntensity))
                 {
                     Log("BlipIntensity " + IntensityMap[settings.BlipIntensity]);
                     spawnedLight.intensity = IntensityMap[settings.BlipIntensity] / 5f;
@@ -31,8 +31,7 @@ namespace BetterHeadlights
             }
             else
             {
-                if (settings.Intensity != "VANILLA" &&
-                    IntensityMap.ContainsKey(settings.Intensity))
+                if (IntensityMap.ContainsKey(settings.Intensity))
                 {
                     Log("Intensity " + IntensityMap[settings.Intensity]);
                     spawnedLight.intensity = IntensityMap[settings.Intensity];

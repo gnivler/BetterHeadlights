@@ -34,8 +34,8 @@ namespace BetterHeadlights
                         {
                             lighTrackers.Add(new LightTracker()
                             {
-                                spawnedLight = transform.GetComponentInChildren<BTLight>(true),
-                                transform = transform
+                                SpawnedLight = transform.GetComponentInChildren<BTLight>(true),
+                                Transform = transform
                             });
                         }
 
@@ -48,7 +48,7 @@ namespace BetterHeadlights
                 // have to deal with it inline
                 // if this mech tracker has no valid lights
                 var lightTrackers = trackerMap[__instance.parentMech.GUID];
-                if (lightTrackers.Any(x => x.transform == null))
+                if (lightTrackers.Any(x => x.Transform == null))
                 {
                     Log(new string('>', 50) + " Invalid mechs in dictionary, clearing");
                     trackerMap.Clear();
@@ -61,18 +61,20 @@ namespace BetterHeadlights
                 {
                     // Where clause should return Count 0 if the lights are already set, skipping SetActive()
                     // the goal being to do nothing unless necessary
-                    foreach (var tracker in lightTrackers.Where(x => x.transform.gameObject.activeSelf != headlightsOn))
+                    foreach (var tracker in lightTrackers.Where(x => x.Transform.gameObject.activeSelf != headlightsOn))
                     {
                         Log("SetActive: " + headlightsOn);
-                        tracker.transform.gameObject.SetActive(headlightsOn);
-                        tracker.adjusted = !headlightsOn;
+                        tracker.Transform.gameObject.SetActive(headlightsOn);
+                        tracker.IsAdjusted = !headlightsOn;
                     }
 
-                    foreach (var tracker in lightTrackers.Where(x => !x.adjusted && x.spawnedLight != null))
+                    foreach (var tracker in lightTrackers.Where(x => !x.IsAdjusted && x.SpawnedLight != null))
                     {
-                        Helpers.SetRange(tracker.spawnedLight, false);
-                        Helpers.SetProfile(tracker.spawnedLight, false);
-                        tracker.adjusted = true;
+                        Helpers.SetRange(tracker.SpawnedLight, false);
+                        Helpers.SetProfile(tracker.SpawnedLight, false);
+                        Log("Refreshing");
+                        tracker.SpawnedLight.RefreshLightSettings(true);
+                        tracker.IsAdjusted = true;
                     }
                 }
                 else if (settings.BlipLights)
@@ -87,15 +89,17 @@ namespace BetterHeadlights
                         }
 
                         // enemy mech is a blip, lights on
-                        lightTrackers.Do(tracker => tracker.transform.gameObject.SetActive(true));
+                        lightTrackers.Do(tracker => tracker.Transform.gameObject.SetActive(true));
                         // configure them
-                        lightTrackers.Where(tracker => !tracker.adjusted)
-                            .Where(tracker => tracker.spawnedLight != null).Do(tracker =>
+                        lightTrackers.Where(tracker => !tracker.IsAdjusted)
+                            .Where(tracker => tracker.SpawnedLight != null).Do(tracker =>
                             {
                                 Log("Enemy");
-                                Helpers.SetRange(tracker.spawnedLight, true);
-                                Helpers.SetProfile(tracker.spawnedLight, true);
-                                tracker.adjusted = true;
+                                Helpers.SetRange(tracker.SpawnedLight, true);
+                                Helpers.SetProfile(tracker.SpawnedLight, true);
+                                Log("Refreshing");
+                                tracker.SpawnedLight.RefreshLightSettings(true);
+                                tracker.IsAdjusted = true;
                             });
                     }
                     catch (NullReferenceException)

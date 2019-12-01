@@ -1,12 +1,13 @@
 using BattleTech.Rendering;
 using UnityEngine;
 
+
 namespace BetterHeadlights
 {
-    public class LightTracker
+    internal class LightTracker
     {
-        public BTLight spawnedLight;
-        public bool adjusted;
-        public Transform transform;
+       internal BTLight SpawnedLight;
+       internal bool IsAdjusted;
+       internal Transform Transform;
     }
 }
