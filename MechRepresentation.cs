@@ -6,42 +6,35 @@ using BattleTech.Rendering;
 using Harmony;
 using UnityEngine;
 using static BetterHeadlights.Core;
+using Object = System.Object;
 
 namespace BetterHeadlights
 {
     [HarmonyPatch(typeof(MechRepresentation), "Update")]
     public static class MechRepresentation_Update_Patch
     {
-        public static void Postfix(MechRepresentation __instance)
+        public static void Postfix(MechRepresentation __instance, List<GameObject> ___headlightReps)
         {
             try
             {
                 // memoize all mech lights (should capture new spawns too)
                 if (!trackerMap.ContainsKey(__instance.parentMech.GUID))
                 {
-                    var lightTransforms = __instance.GetComponentsInChildren<Transform>(true)
-                        // ReSharper disable once StringLiteralTypo
-                        .Where(x => x.name.Contains("centertorso_headlight")).ToList();
-
-                    Log($"Adding mech {__instance.parentMech.MechDef.Name} with {lightTransforms.Count} lights");
-                    trackerMap.Add(__instance.parentMech.GUID, GetLightTrackers());
-
-                    // build LightTrackers
-                    List<LightTracker> GetLightTrackers()
+                    var lights = new List<LightTracker>();
+                    foreach (var light in ___headlightReps)
                     {
-                        var lighTrackers = new List<LightTracker>();
-                        foreach (var transform in lightTransforms)
-                        {
-                            lighTrackers.Add(new LightTracker()
+                        lights.Add(
+                            new LightTracker
                             {
-                                SpawnedLight = transform.GetComponentInChildren<BTLight>(true),
-                                Transform = transform
+                                SpawnedLight = light.GetComponentInChildren<BTLight>(),
+                                Transform = light.transform
                             });
-                        }
-
-                        return lighTrackers;
                     }
+
+                    trackerMap.Add(__instance.parentMech.GUID, lights
+                        .Where(x => x.SpawnedLight != null).ToList());
                 }
+
 
                 // Update() runs over by several frames after loading/restarting a mission
                 // so hooking separately those is problematic because it repopulates with bad data
@@ -67,14 +60,20 @@ namespace BetterHeadlights
                         tracker.Transform.gameObject.SetActive(headlightsOn);
                         tracker.IsAdjusted = !headlightsOn;
                     }
-
+                    
                     foreach (var tracker in lightTrackers.Where(x => !x.IsAdjusted && x.SpawnedLight != null))
                     {
-                        Helpers.SetRange(tracker.SpawnedLight, false);
-                        Helpers.SetProfile(tracker.SpawnedLight, false);
-                        Log("Refreshing");
-                        tracker.SpawnedLight.RefreshLightSettings(true);
+                        UnityEngine.Object.Destroy(tracker.SpawnedLight);
+                        UnityEngine.Object.Destroy(tracker.SpawnedLight.GetComponentInChildren<LightSpawner>());
+                        var newLight = tracker.Transform.gameObject.AddComponent<LightSpawner>().spawnedLight;
+                        
+                        Helpers.SetRange(newLight, false);
+                        Helpers.SetProfile(newLight, false);
+                        newLight.RefreshLightSettings(true);
                         tracker.IsAdjusted = true;
+                        
+                        Log("Refreshing");
+                        //tracker.SpawnedLight.RefreshLightSettings(true);
                     }
                 }
                 else if (settings.BlipLights)
@@ -97,8 +96,7 @@ namespace BetterHeadlights
                                 Log("Enemy");
                                 Helpers.SetRange(tracker.SpawnedLight, true);
                                 Helpers.SetProfile(tracker.SpawnedLight, true);
-                                Log("Refreshing");
-                                tracker.SpawnedLight.RefreshLightSettings(true);
+
                                 tracker.IsAdjusted = true;
                             });
                     }

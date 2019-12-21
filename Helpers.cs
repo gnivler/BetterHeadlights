@@ -6,7 +6,7 @@ namespace BetterHeadlights
     // ReSharper disable once ClassNeverInstantiated.Global
     public class Helpers
     {
-        internal const float ExtraRange = 500f;
+        private const float ExtraRange = 500f;
 
         internal static void SetRange(BTLight spawnedLight, bool isBlip)
         {
