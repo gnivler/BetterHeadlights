@@ -7,7 +7,9 @@ using Harmony;
 using UnityEngine;
 using static BetterHeadlights.Core;
 
-namespace BetterHeadlights
+// ReSharper disable InconsistentNaming
+
+namespace BetterHeadlights.Patches
 {
     [HarmonyPatch(typeof(VehicleRepresentation), "Update")]
     public static class VehicleRepresentation_Update_Patch
@@ -33,21 +35,24 @@ namespace BetterHeadlights
                 // only try to find the transform if not memoized
                 // there is one parent transform which is not active
                 var vehicleGUID = __instance.parentVehicle.GUID;
-                if (!trackerMap.ContainsKey(vehicleGUID))
+                if (!vehicleMap.ContainsKey(vehicleGUID))
                 {
                     Log($"Adding vehicle {__instance.parentVehicle.Nickname} with {__instance.VisibleLights.Length} lights");
                     foreach (var light in __instance.VisibleLights)
                     {
+                        UnityEngine.Object.Destroy(light.GetComponentInChildren<LightSpawner>());
+                        UnityEngine.Object.Destroy(light.GetComponentInChildren<BTLight>());
+                        Helpers.RemakeLight(light.transform);
                         transform = light.GetComponentsInParent<Transform>(true)
                             .FirstOrDefault(x => !x.gameObject.activeSelf);
                         if (transform != null)
                         {
                             // add single inactive transform
-                            trackerMap.Add(__instance.parentVehicle.GUID, new List<LightTracker>
+                            vehicleMap.Add(__instance.parentVehicle.GUID, new List<LightTracker>
                             {
                                 new LightTracker
                                 {
-                                    Transform = transform,
+                                    ParentTransform = transform,
                                 }
                             });
                             break;
@@ -55,16 +60,18 @@ namespace BetterHeadlights
                     }
 
                     // it doesn't have any inactive transforms so we don't care about it really
-                    // missiles seem to run this method.  memoize it so it doesn't check every frame
-                    if (!trackerMap.ContainsKey(vehicleGUID))
+                    // missiles seem to run this method.  memoize it
+                    // TODO test if missiles are impacted and stop it?
+                    if (!vehicleMap.ContainsKey(vehicleGUID))
                     {
-                        trackerMap.Add(__instance.parentVehicle.GUID, new List<LightTracker>());
+                        vehicleMap.Add(__instance.parentVehicle.GUID, new List<LightTracker>());
                     }
                 }
 
                 // grab the inactive transform, activate it but disable the mesh
-                transform = trackerMap[__instance.parentVehicle.GUID].FirstOrDefault()?.Transform;
-                if (transform != null)
+                transform = vehicleMap[__instance.parentVehicle.GUID].FirstOrDefault()?.ParentTransform;
+                if (transform != null &&
+                    !transform.gameObject.activeSelf)
                 {
                     transform.gameObject.SetActive(true);
                     var mesh = transform.GetComponentInChildren<SkinnedMeshRenderer>();

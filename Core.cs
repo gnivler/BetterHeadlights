@@ -16,7 +16,9 @@ namespace BetterHeadlights
     {
         internal static Settings settings;
         internal static bool headlightsOn = true;
-        internal static readonly Dictionary<string, List<LightTracker>> trackerMap = new Dictionary<string, List<LightTracker>>();
+        internal static readonly Dictionary<string, LightTracker> mechMap = new Dictionary<string, LightTracker>();
+        internal static readonly Dictionary<string, List<LightTracker>> vehicleMap = new Dictionary<string, List<LightTracker>>();
+        internal static HarmonyInstance harmony;
 
         internal static readonly Dictionary<string, float> IntensityMap = new Dictionary<string, float>
         {
@@ -39,7 +41,7 @@ namespace BetterHeadlights
             }
 
             Log($"Starting up {DateTime.Now.ToShortTimeString()}");
-            var harmony = HarmonyInstance.Create("ca.gnivler.BattleTech.BetterHeadlights");
+            harmony = HarmonyInstance.Create("ca.gnivler.BattleTech.BetterHeadlights");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
 

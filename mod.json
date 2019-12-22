@@ -7,10 +7,10 @@
   "Author": "gnivler",
   "Settings": {
     "Angle": 45,
-    "Intensity": "",
-    "ExtraRange": false,
-    "BlipLights": false,
-    "BlipIntensity": "",
+    "Intensity": "HIGH",
+    "ExtraRange": true,
+    "BlipLights": true,
+    "BlipIntensity": "HIGH",
     "BlipExtraRange": true
   }
 }

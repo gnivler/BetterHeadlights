@@ -59,10 +59,11 @@
         <Compile Include="Core.cs" />
         <Compile Include="Helpers.cs" />
         <Compile Include="LightTracker.cs" />
-        <Compile Include="MechRepresentation.cs" />
+        <Compile Include="Patches\LightSpawner.cs" />
+        <Compile Include="Patches\MechRepresentation.cs" />
+        <Compile Include="Patches\VehicleRepresentation.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="Settings.cs" />
-        <Compile Include="VehicleRepresentation.cs" />
     </ItemGroup>
     <ItemGroup>
       <Content Include="mod.json" />

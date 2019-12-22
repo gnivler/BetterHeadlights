@@ -1,18 +1,16 @@
 using BattleTech.Rendering;
 using UnityEngine;
-
-
+           
 namespace BetterHeadlights
 {
     internal class LightTracker
     {
        internal BTLight SpawnedLight;
-       internal bool IsAdjusted;
-       internal Transform Transform;
+       internal Transform ParentTransform;
 
        public override string ToString()
        {
-           return $"{SpawnedLight}, {IsAdjusted}, {Transform.name}";
+           return $"{SpawnedLight}, {ParentTransform.name}";
        }
     }
 }
