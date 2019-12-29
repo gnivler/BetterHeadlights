@@ -24,21 +24,25 @@ namespace BetterHeadlights
 
         internal static bool isRemaking;
 
-        internal static void RemakeLight(Transform parentTransform)
+        internal static void RemakeLight(Transform headlightTransform)
         {
-            var lightSpawner = parentTransform.GetComponentInChildren<LightSpawner>();
-            var btLight = parentTransform.GetComponentInChildren<BTLight>();
-            var btFlare = parentTransform.GetComponentInChildren<BTFlare>();
+            var lightSpawner = headlightTransform.GetComponentInChildren<LightSpawner>();
+            var btLight = headlightTransform.GetComponentInChildren<BTLight>();
+            var btFlare = headlightTransform.GetComponentInChildren<BTFlare>();
             Object.Destroy(lightSpawner);
             Object.Destroy(btLight);
             Object.Destroy(btFlare);
+            // TODO this bool was just to check for Harmony bug
             isRemaking = true;
+            harmony.Patch(original);
             harmony.Patch(original,
                 new HarmonyMethod(prefix),
                 new HarmonyMethod(postfix));
-            parentTransform.gameObject.AddComponent<LightSpawner>();
+            Log("Create LightSpawner");
+            headlightTransform.gameObject.AddComponent<LightSpawner>();
+            harmony.Unpatch(original, postfix);
+            harmony.Unpatch(original, prefix);
             isRemaking = false;
-            harmony.Unpatch(original, HarmonyPatchType.All);
         }
     }
 }

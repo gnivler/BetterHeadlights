@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
     <PropertyGroup>
@@ -73,11 +73,6 @@
         <PostBuildEvent>
         xcopy $(TargetPath) N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\BetterHeadlights /Y
         xcopy $(ProjectDir)mod.json N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\BetterHeadlights /Y
-
-            xcopy $(TargetPath) "C:\Users\mason\Documents\My Games\BattleTech\mods\BetterHeadlights" /Y
-            xcopy $(ProjectDir)mod.json "C:\Users\mason\Documents\My Games\BattleTech\mods\BetterHeadlights" /Y
-
-
         </PostBuildEvent>
     </PropertyGroup>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

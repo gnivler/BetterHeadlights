@@ -6,11 +6,11 @@ namespace BetterHeadlights
     internal class LightTracker
     {
        internal BTLight SpawnedLight;
-       internal Transform ParentTransform;
+       internal Transform HeadlightTransform;
 
        public override string ToString()
        {
-           return $"{SpawnedLight}, {ParentTransform.name}";
+           return $"{SpawnedLight}, {HeadlightTransform.name}";
        }
     }
 }

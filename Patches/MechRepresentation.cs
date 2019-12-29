@@ -7,6 +7,7 @@ using Harmony;
 using HBS;
 using UnityEngine;
 using static BetterHeadlights.Core;
+using Object = UnityEngine.Object;
 
 // ReSharper disable InconsistentNaming
 
@@ -17,7 +18,7 @@ namespace BetterHeadlights.Patches
     {
         private static Stopwatch timer = new Stopwatch();
 
-        public static void Postfix(MechRepresentation __instance, ref List<GameObject> ___headlightReps)
+        public static void Postfix(MechRepresentation __instance, List<GameObject> ___headlightReps)
         {
             try
             {
@@ -25,9 +26,11 @@ namespace BetterHeadlights.Patches
                 // memoize headlights (should capture new spawns too)
                 if (!mechMap.ContainsKey(__instance.parentMech.GUID))
                 {
-                    var lightSpawner = __instance
-                        .GetComponentsInChildren<LightSpawner>()
-                        .First(x => x.spawnedLight.lightType == BTLight.LightTypes.Spot);
+                    //__instance.GetComponentsInChildren<Component>().Do(Log);
+                    var lightSpawner = ___headlightReps
+                        .First(x => x.name.Contains("centertorso_headlight"))
+                        .GetComponentInChildren<LightSpawner>();
+
                     var headlight = lightSpawner.transform.parent.gameObject;
 
                     // just delete the LightSpawner and remake it with the patch in place
@@ -36,10 +39,10 @@ namespace BetterHeadlights.Patches
                     mechMap.Add(__instance.parentMech.GUID, new LightTracker
                     {
                         SpawnedLight = headlight.GetComponentInChildren<BTLight>(),
-                        ParentTransform = headlight.transform
+                        HeadlightTransform = headlight.transform
                     });
 
-                    mechMap[__instance.parentMech.GUID].SpawnedLight.RefreshLightSettings(true);
+                    mechMap[__instance.parentMech.GUID]?.SpawnedLight.RefreshLightSettings(true);
                     Log(timer.Elapsed);
                 }
 
@@ -47,7 +50,7 @@ namespace BetterHeadlights.Patches
                 // so hooking separately those is problematic because it repopulates with bad data
                 // have to deal with it inline
                 var lightTracker = mechMap[__instance.parentMech.GUID];
-                if (lightTracker.ParentTransform == null)
+                if (lightTracker.HeadlightTransform == null)
                 {
                     Log(new string('>', 50) + " Invalid mechs in dictionary, clearing");
                     mechMap.Clear();
@@ -59,7 +62,7 @@ namespace BetterHeadlights.Patches
                 if (__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam)
                 {
                     // the goal being to do nothing unless necessary
-                    if (lightTracker.ParentTransform.gameObject.activeSelf != headlightsOn)
+                    if (lightTracker.HeadlightTransform.gameObject.activeSelf != headlightsOn)
                     {
                         // when the lights are reactivated they are recreated without
                         // custom settings, unless patched and remade
@@ -67,11 +70,15 @@ namespace BetterHeadlights.Patches
                         Log($"{__instance.parentMech.DisplayName} SetActive: " + headlightsOn);
                         if (headlightsOn)
                         {
-                            Helpers.RemakeLight(lightTracker.ParentTransform);
+                            Log("Remaking in toggle");
+                            lightTracker.HeadlightTransform.gameObject.SetActive(true);
+                            Helpers.RemakeLight(lightTracker.HeadlightTransform);
+                            lightTracker.SpawnedLight.RefreshLightSettings(true);
                         }
-
-                        lightTracker.ParentTransform.gameObject.SetActive(headlightsOn);
-                        lightTracker.SpawnedLight.RefreshLightSettings(true);
+                        else
+                        {
+                            lightTracker.HeadlightTransform.gameObject.SetActive(false);
+                        }
                     }
                 }
                 else if (settings.BlipLights)
@@ -86,9 +93,9 @@ namespace BetterHeadlights.Patches
                         }
 
                         // enemy mech is a blip, lights on
-                        if (!lightTracker.ParentTransform.gameObject.activeSelf)
+                        if (!lightTracker.HeadlightTransform.gameObject.activeSelf)
                         {
-                            lightTracker.ParentTransform.gameObject.SetActive(true);
+                            lightTracker.HeadlightTransform.gameObject.SetActive(true);
                         }
                     }
                     catch (NullReferenceException)

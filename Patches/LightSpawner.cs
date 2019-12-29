@@ -16,6 +16,7 @@ namespace BetterHeadlights.Patches
 
         public static void Prefix(LightSpawner __instance)
         {
+            // TODO delete these
             if (!Helpers.isRemaking)
             {
                 Log("Unpatched execution");
@@ -28,6 +29,7 @@ namespace BetterHeadlights.Patches
         // recreate a spotlight, with settings
         public static void Postfix(LightSpawner __instance, BTLight ___spawnedLight)
         {
+            // TODO delete these
             if (!Helpers.isRemaking)
             {
                 Log("Unpatched execution");
