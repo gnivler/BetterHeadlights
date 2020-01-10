@@ -7,7 +7,6 @@ using Harmony;
 using HBS;
 using UnityEngine;
 using static BetterHeadlights.Core;
-using Object = UnityEngine.Object;
 
 // ReSharper disable InconsistentNaming
 
@@ -23,26 +22,34 @@ namespace BetterHeadlights.Patches
             try
             {
                 timer.Restart();
+                var headlight = ___headlightReps
+                    .First(x => x.name.Contains("centertorso_headlight"))
+                    .GetComponentInChildren<BTLight>(true);
+
+                
+                //var foo = __instance.VisibleLights.Where(x => x.name.Contains("torso"));
+
                 // memoize headlights (should capture new spawns too)
                 if (!mechMap.ContainsKey(__instance.parentMech.GUID))
                 {
-                    //__instance.GetComponentsInChildren<Component>().Do(Log);
-                    var lightSpawner = ___headlightReps
-                        .First(x => x.name.Contains("centertorso_headlight"))
-                        .GetComponentInChildren<LightSpawner>();
-
-                    var headlight = lightSpawner.transform.parent.gameObject;
+                    //__instance.VisibleLights.Do(Log);
+                    //var headlight = lightSpawner.transform.parent.gameObject;
 
                     // just delete the LightSpawner and remake it with the patch in place
-                    Log($"Remake {headlight.name} ({__instance.parentMech.DisplayName})");
-                    Helpers.RemakeLight(headlight.transform);
+                    // for whatever reason, adjusting this with the postfix fails
+                    // to achieve the effect, so we try remaking it...
+                    Log($"Configure {headlight.name} ({__instance.parentMech.DisplayName})");
+
+                    // TODO 
+                    // Helpers.RemakeLight(headlight.transform);
+                    //var btLight = headlight.GetComponentInChildren<BTLight>(true);
+                    headlight.ConfigureLight();
                     mechMap.Add(__instance.parentMech.GUID, new LightTracker
                     {
-                        SpawnedLight = headlight.GetComponentInChildren<BTLight>(),
+                        SpawnedLight = headlight,
                         HeadlightTransform = headlight.transform
                     });
 
-                    mechMap[__instance.parentMech.GUID]?.SpawnedLight.RefreshLightSettings(true);
                     Log(timer.Elapsed);
                 }
 
@@ -52,8 +59,9 @@ namespace BetterHeadlights.Patches
                 var lightTracker = mechMap[__instance.parentMech.GUID];
                 if (lightTracker.HeadlightTransform == null)
                 {
-                    Log(new string('>', 50) + " Invalid mechs in dictionary, clearing");
+                    Log(new string('>', 50) + " Invalid mechs in dictionary, clearing all data");
                     mechMap.Clear();
+                    vehicleMap.Clear();
                     headlightsOn = true;
                     return;
                 }
@@ -70,10 +78,12 @@ namespace BetterHeadlights.Patches
                         Log($"{__instance.parentMech.DisplayName} SetActive: " + headlightsOn);
                         if (headlightsOn)
                         {
-                            Log("Remaking in toggle");
+                            // for whatever reason, remaking the light here fails to achieve the effect
+                            // using the postfix works, though...
+                            Log("Resetting in toggle");
                             lightTracker.HeadlightTransform.gameObject.SetActive(true);
-                            Helpers.RemakeLight(lightTracker.HeadlightTransform);
-                            lightTracker.SpawnedLight.RefreshLightSettings(true);
+                            headlight.ConfigureLight();
+                            //LightSpawner_SpawnLight_Patch.Postfix(lightSpawner, lightSpawner.GetComponentInChildren<BTLight>());
                         }
                         else
                         {
@@ -96,12 +106,20 @@ namespace BetterHeadlights.Patches
                         if (!lightTracker.HeadlightTransform.gameObject.activeSelf)
                         {
                             lightTracker.HeadlightTransform.gameObject.SetActive(true);
+                            headlight.ConfigureLight();
+                            //LightSpawner_SpawnLight_Patch.Postfix(lightSpawner, lightSpawner.GetComponentInChildren<BTLight>());
                         }
                     }
                     catch (NullReferenceException)
                     {
                         // do nothing (harmless NREs at load)
                     }
+                }
+                else
+                {
+                    lightTracker.HeadlightTransform.gameObject.SetActive(true);
+                    headlight.ConfigureLight();
+                    //LightSpawner_SpawnLight_Patch.Postfix(lightSpawner, lightSpawner.GetComponentInChildren<BTLight>());
                 }
             }
             catch (Exception ex)

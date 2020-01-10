@@ -1,5 +1,10 @@
+using System;
+using System.Linq;
 using BattleTech;
 using BattleTech.Rendering;
+using Harmony;
+using HBS.Extensions;
+using UnityEngine;
 using static BetterHeadlights.Core;
 
 // ReSharper disable InconsistentNaming
@@ -10,64 +15,78 @@ namespace BetterHeadlights.Patches
     {
         // magic numbers.. sorry.  adjusted to visuals
         private const float radius = 500;
-        private const float volumetricFactor = 0.33f;
-        private const float vehicleIntensityFactor = 5f;
         private const float vehicleAngleFactor = 1.2f;
 
+        // recreate a spotlight, with settings
         public static void Prefix(LightSpawner __instance)
         {
-            // TODO delete these
-            if (!Helpers.isRemaking)
+            try
             {
-                Log("Unpatched execution");
-                return;
+                __instance.type = LightSpawner.LightTypes.spot;
             }
-
-            __instance.type = LightSpawner.LightTypes.spot;
+            catch (Exception ex)
+            {
+                Log(ex);
+            }
         }
 
-        // recreate a spotlight, with settings
+        //static VehicleRepresentation[] vehicles = Resources.FindObjectsOfTypeAll<VehicleRepresentation>();
+
         public static void Postfix(LightSpawner __instance, BTLight ___spawnedLight)
         {
-            // TODO delete these
-            if (!Helpers.isRemaking)
+            try
             {
-                Log("Unpatched execution");
-                return;
-            }
+                //vehicles.Do(x => x.GetComponentsInChildren<LightSpawner>(true).Do(Log));
+                //Log(vehicles.Any(x => x.GetComponentsInChildren<LightSpawner>(true).Any(y=>y ==__instance)));
+               //var vee = __instance.transform.parent.gameObject.FindFirstChildNamed("j_COCKPIT").transform.parent.gameObject
+               //    .GetComponentInChildren<VehicleRepresentation>();
+               //
+               //Log(vee);
+                Log(new string('=', 50));
+                Log($"Patching {__instance}");
+                if (settings.ExtraRange)
+                {
+                    Log("RADIUS");
+                    ___spawnedLight.radius = radius;
+                }
 
-            if (__instance.type == LightSpawner.LightTypes.point)
-            {
-                Log("Skipping point light");
-                return;
-            }
-
-            var mech = __instance.transform.parent.gameObject
-                .GetComponentInParent<MechRepresentation>().parentMech;
-            Log($"adjusting: {__instance.name} ({__instance.transform.parent.name}) - {mech?.team.DisplayName}");
-
-            if (settings.ExtraRange)
-            {
-                Log("RADIUS");
-                ___spawnedLight.radius = radius;
-            }
-
-            if (IntensityMap.ContainsKey(settings.Intensity))
-            {
-                Log("INTENSITY");
-                // TODO scale it with the brightness setting?
-                ___spawnedLight.volumetricsMultiplier *= volumetricFactor;
                 // vehicle lights are named this way...
                 if (__instance.name.StartsWith("light"))
                 {
-                    ___spawnedLight.intensity = IntensityMap[settings.Intensity] / vehicleIntensityFactor;
-                    ___spawnedLight.spotlightAngleOuter = settings.Angle * vehicleAngleFactor;
+                    if (IntensityMap.ContainsKey(settings.VehicleIntensity))
+                    {
+                        Log("VEHICLE INTENSITY " + IntensityMap[settings.VehicleIntensity]);
+                        ___spawnedLight.intensity = IntensityMap[settings.VehicleIntensity];
+                    }
+
+                    if (Math.Abs(settings.Angle - 30) > float.Epsilon)
+                    {
+                        ___spawnedLight.spotlightAngleOuter = settings.Angle * vehicleAngleFactor;
+                    }
+
+                    ___spawnedLight.volumetricsMultiplier *= settings.VehicleVolumetricsFactor;
                 }
                 else
                 {
-                    ___spawnedLight.intensity = IntensityMap[settings.Intensity];
-                    ___spawnedLight.spotlightAngleOuter = settings.Angle;
+                    if (IntensityMap.ContainsKey(settings.MechIntensity))
+                    {
+                        Log("MECH INTENSITY " + IntensityMap[settings.MechIntensity]);
+                        ___spawnedLight.intensity = IntensityMap[settings.MechIntensity];
+                    }
+
+                    if (Math.Abs(settings.Angle - 30) > float.Epsilon)
+                    {
+                        ___spawnedLight.spotlightAngleOuter = settings.Angle;
+                    }
+
+                    ___spawnedLight.volumetricsMultiplier *= settings.MechVolumetricsFactor;
                 }
+
+                ___spawnedLight.RefreshLightSettings(true);
+            }
+            catch (Exception ex)
+            {
+                Log(ex);
             }
         }
     }
