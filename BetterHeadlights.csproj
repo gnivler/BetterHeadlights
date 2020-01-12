@@ -56,11 +56,8 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="BetterLight.cs" />
         <Compile Include="Core.cs" />
         <Compile Include="Helpers.cs" />
-        <Compile Include="LightTracker.cs" />
-        <Compile Include="Patches\LightSpawner.cs" />
         <Compile Include="Patches\MechRepresentation.cs" />
         <Compile Include="Patches\VehicleRepresentation.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />

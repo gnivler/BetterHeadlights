@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using BattleTech;
+using BattleTech.Rendering;
 using Harmony;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -16,8 +17,8 @@ namespace BetterHeadlights
     {
         internal static Settings settings;
         internal static bool headlightsOn = true;
-        internal static readonly Dictionary<string, LightTracker> mechMap = new Dictionary<string, LightTracker>();
-        internal static readonly Dictionary<string, List<LightTracker>> vehicleMap = new Dictionary<string, List<LightTracker>>();
+        internal static readonly Dictionary<string, LightSpawner> mechMap = new Dictionary<string, LightSpawner>();
+        internal static readonly Dictionary<string, List<Transform>> vehicleMap = new Dictionary<string, List<Transform>>();
         internal static HarmonyInstance harmony;
 
         internal static readonly Dictionary<string, float> IntensityMap = new Dictionary<string, float>

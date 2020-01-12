@@ -1,12 +1,6 @@
 using System;
-using System.Reflection;
-using BattleTech;
 using BattleTech.Rendering;
-using BetterHeadlights.Patches;
-using Harmony;
-using UnityEngine;
 using static BetterHeadlights.Core;
-using Object = UnityEngine.Object;
 
 // ReSharper disable InconsistentNaming
 
@@ -14,54 +8,24 @@ namespace BetterHeadlights
 {
     public static class Helpers
     {
-        private static readonly MethodInfo original =
-            AccessTools.Method(typeof(LightSpawner), "SpawnLight");
-
-        private static readonly MethodInfo prefix =
-            AccessTools.Method(typeof(LightSpawner_SpawnLight_Patch),
-                nameof(LightSpawner_SpawnLight_Patch.Prefix));
-
-        private static readonly MethodInfo postfix =
-            AccessTools.Method(typeof(LightSpawner_SpawnLight_Patch),
-                nameof(LightSpawner_SpawnLight_Patch.Postfix));
-
         // magic numbers.. sorry.  adjusted to visuals
         private const float radius = 500;
-        private const float vehicleAngleFactor = 1.2f;
-
-        internal static void RemakeLight(Transform headlightTransform)
-        {
-            var lightSpawner = headlightTransform.GetComponentInChildren<LightSpawner>();
-            var btLight = headlightTransform.GetComponentInChildren<BTLight>();
-            var btFlare = headlightTransform.GetComponentInChildren<BTFlare>();
-            Object.Destroy(lightSpawner);
-            Object.Destroy(btLight);
-            Object.Destroy(btFlare);
-
-            harmony.Patch(original);
-            harmony.Patch(original,
-                new HarmonyMethod(prefix),
-                new HarmonyMethod(postfix));
-            Log("Create patched LightSpawner");
-            headlightTransform.gameObject.AddComponent<LightSpawner>();
-            harmony.Unpatch(original, postfix);
-            harmony.Unpatch(original, prefix);
-        }
+        private const float vehicleAngleFactor = 1.1f;
 
         internal static void ConfigureLight(this BTLight btLight, bool isVehicle = false)
         {
+            //Log($"{btLight.name} is type {btLight.lightType}");
 
-            Log($"{btLight.name} is type {btLight.lightType}");
-
+            // TODO from old code, likely remove this
             // because for whatever goddamn reason Torso lights are point lights
             // must be being switched elsewhere?  nonsense
             if (btLight.lightType == BTLight.LightTypes.Point &&
                 !btLight.name.Contains("Torso"))
             {
-                Log("ABORT");
+                Log("ABORT " + btLight.name);
                 return;
             }
-            
+
             if (settings.ExtraRange)
             {
                 btLight.radius = radius;
@@ -71,38 +35,61 @@ namespace BetterHeadlights
             {
                 if (IntensityMap.ContainsKey(settings.VehicleIntensity))
                 {
-                    Log("VEHICLE INTENSITY " + IntensityMap[settings.VehicleIntensity]);
+                    //Log("VEHICLE INTENSITY " + IntensityMap[settings.VehicleIntensity]);
                     btLight.intensity = IntensityMap[settings.VehicleIntensity];
                 }
 
                 if (Math.Abs(settings.Angle - 30) > float.Epsilon)
                 {
-                    Log("VEHICLE ANGLE " + settings.Angle / vehicleAngleFactor);
+                    //Log("VEHICLE ANGLE " + settings.Angle / vehicleAngleFactor);
                     btLight.spotlightAngleOuter = settings.Angle / vehicleAngleFactor;
                 }
 
-                Log("VEHICLE VOLUMETRICS " + settings.VehicleVolumetricsFactor);
+                //Log("VEHICLE VOLUMETRICS " + settings.VehicleVolumetricsFactor);
                 btLight.volumetricsMultiplier *= settings.VehicleVolumetricsFactor;
             }
             else
             {
                 if (IntensityMap.ContainsKey(settings.MechIntensity))
                 {
-                    Log("MECH INTENSITY " + IntensityMap[settings.MechIntensity]);
+                    //Log("MECH INTENSITY " + IntensityMap[settings.MechIntensity]);
                     btLight.intensity = IntensityMap[settings.MechIntensity];
                 }
 
                 if (Math.Abs(settings.Angle - 30) > float.Epsilon)
                 {
-                    Log("MECH ANGLE " + settings.Angle);
+                    //Log("MECH ANGLE " + settings.Angle);
                     btLight.spotlightAngleOuter = settings.Angle;
                 }
 
-                Log("MECH VOLUMETRICS " + settings.MechVolumetricsFactor);
+                //Log("MECH VOLUMETRICS " + settings.MechVolumetricsFactor);
                 btLight.volumetricsMultiplier *= settings.MechVolumetricsFactor;
             }
 
-            //btLight.RefreshLightSettings(true);
+            // HBS default = 0
+            btLight.spotlightAngleInner = 0;
+
+            var parent = btLight.transform.parent;
+            var lightSpawner = parent.GetComponentInChildren<LightSpawner>();
+            btLight.castShadows = lightSpawner.castShadows;
+            btLight.contributeVolumetrics = true;
+            btLight.shadowBias = 0.0005f;
+            btLight.shadowNearPlane = 0.005f;
+            if (lightSpawner.spawnedFlare != null && !lightSpawner.spawnedFlare.enabled)
+            {
+                lightSpawner.spawnedFlare.enabled = true;
+            }
+            else if (lightSpawner.spawnedFlare == null)
+            {
+                lightSpawner.spawnedFlare = lightSpawner.gameObject.AddComponent<BTFlare>();
+            }
+
+            lightSpawner.spawnedFlare.useCone = true;
+            lightSpawner.spawnedFlare.innerAngle = 0;
+            lightSpawner.spawnedFlare.outerAngle = 30;
+            lightSpawner.spawnedFlare.intensity = lightSpawner.spawnedLight.intensity * 1.25f / 500000f;
+            lightSpawner.spawnedFlare.color = lightSpawner.spawnedLight.lightColor;
+            btLight.RefreshLightSettings(true);
         }
     }
 }

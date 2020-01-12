@@ -10,7 +10,7 @@
     "MechIntensity": "MID",
     "ExtraRange": true,
     "BlipLights": true,
-    "VehicleIntensity": "",
+    "VehicleIntensity": "LOW",
     "MechVolumetricsFactor": 0.125,
     "VehicleVolumetricsFactor": 0.25
   }
