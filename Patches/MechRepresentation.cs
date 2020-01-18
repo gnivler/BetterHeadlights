@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BattleTech;
 using BattleTech.Rendering;
 using Harmony;
+using HBS;
+using HBS.Extensions;
 using UnityEngine;
 using static BetterHeadlights.Core;
 
@@ -21,15 +25,26 @@ namespace BetterHeadlights.Patches
             try
             {
                 if (__instance.IsDead)
+                    
                 {
                     return;
                 }
-                
+
                 //timer.Restart();
                 if (!mechMap.ContainsKey(__instance.parentMech.GUID))
                 {
                     Log(new string('-', 80));
                     Log("MEMOIZING " + __instance.parentMech.DisplayName);
+
+                    __instance
+                        .GetComponentsInChildren<Transform>(true)
+                        .Where(t => t.name.Contains("headlight"))
+                        .Where(t => t.GetComponentInChildren<BTFlare>(true) != null)
+                        .Do(Log);
+
+                    var numSpawners = __instance.GetComponentsInChildren<Transform>(true)
+                        .Where(t => t.name.Contains("headlight"))
+                        .Count(t => t.GetComponentInChildren<BTFlare>(true) != null);
 
                     // brittle... 
                     lightSpawner = __instance
@@ -53,9 +68,36 @@ namespace BetterHeadlights.Patches
                     }
                     else
                     {
-                        Log("BOMB");
+                        mechMap.Add(
+                            __instance.parentMech.GUID,
+                            new GameObject("BetterHeadlightsDummy").AddComponent<LightSpawner>());
                         return;
                     }
+
+                    //if (numSpawners > 1)
+                    //{
+                    //    var spawners = __instance
+                    //        .GetComponentsInChildren<Transform>(true)
+                    //        .Where(t => t.name.Contains("headlight"))
+                    //        .Where(t => t.GetComponentInChildren<BTFlare>(true) != null)
+                    //        .Select(x => x.GetComponentInChildren<LightSpawner>());
+                    //    
+                    //    lightSpawner = __instance
+                    //        .GetComponentsInChildren<Transform>(true)
+                    //        .First(t => t.GetComponentInChildren<BTFlare>(true) != null)
+                    //        .GetComponentInChildren<LightSpawner>(true);
+                    //    lightSpawner.spawnedLight.ConfigureLight();
+
+                    // DESTROY WITH FIRE THE SECOND LIGHT
+                    //var otherLight = __instance
+                    //    .GetComponentsInChildren<Transform>(true)
+                    //    .Where(t => t.name.Contains("headlight"))
+                    //    .First(t => t.GetComponentInChildren<BTFlare>(true) != null)
+                    //    .GetComponentInChildren<LightSpawner>()
+                    //    .transform.gameObject;
+                    //
+                    //UnityEngine.Object.Destroy(otherLight);
+                    //}
                 }
             }
             catch (Exception ex)
@@ -89,7 +131,8 @@ namespace BetterHeadlights.Patches
             }
 
             if (settings.BlipLights &&
-                !__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam)
+                !__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam &&
+                lightSpawner.transform.gameObject.name != "BetterHeadlightsDummy")
             {
                 var localPlayerTeam = UnityGameInstance.BattleTechGame.Combat.LocalPlayerTeam;
                 var visibilityLevel = localPlayerTeam.VisibilityToTarget(__instance.parentActor);
@@ -101,7 +144,6 @@ namespace BetterHeadlights.Patches
 
                         if (!lightSpawner.transform.parent.gameObject.activeSelf)
                         {
-                            Log("Activating GameObject");
                             lightSpawner.transform.parent.gameObject.SetActive(true);
                         }
 

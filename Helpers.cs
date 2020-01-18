@@ -1,6 +1,8 @@
 using System;
 using BattleTech.Rendering;
+using UnityEngine;
 using static BetterHeadlights.Core;
+using Object = UnityEngine.Object;
 
 // ReSharper disable InconsistentNaming
 
@@ -16,16 +18,7 @@ namespace BetterHeadlights
         {
             //Log($"{btLight.name} is type {btLight.lightType}");
 
-            // TODO from old code, likely remove this
-            // because for whatever goddamn reason Torso lights are point lights
-            // must be being switched elsewhere?  nonsense
-            if (btLight.lightType == BTLight.LightTypes.Point &&
-                !btLight.name.Contains("Torso"))
-            {
-                Log("ABORT " + btLight.name);
-                return;
-            }
-
+ 
             if (settings.ExtraRange)
             {
                 btLight.radius = radius;

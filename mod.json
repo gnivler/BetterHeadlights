@@ -2,7 +2,7 @@
   "Name": "BetterHeadlights",
   "DLL": "BetterHeadlights.dll",
   "Enabled": true,
-  "Version": "3.0",
+  "Version": "3.0.1",
   "Description": "Change how Mech, vehicle and radar-blip lights operate",
   "Author": "gnivler",
   "Settings": {
