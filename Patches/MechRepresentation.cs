@@ -25,7 +25,7 @@ namespace BetterHeadlights.Patches
             try
             {
                 if (__instance.IsDead)
-                    
+
                 {
                     return;
                 }
@@ -36,11 +36,11 @@ namespace BetterHeadlights.Patches
                     Log(new string('-', 80));
                     Log("MEMOIZING " + __instance.parentMech.DisplayName);
 
-                    __instance
-                        .GetComponentsInChildren<Transform>(true)
-                        .Where(t => t.name.Contains("headlight"))
-                        .Where(t => t.GetComponentInChildren<BTFlare>(true) != null)
-                        .Do(Log);
+                    //__instance
+                    //    .GetComponentsInChildren<Transform>(true)
+                    //    .Where(t => t.name.Contains("headlight"))
+                    //    .Where(t => t.GetComponentInChildren<BTFlare>(true) != null)
+                    //    .Do(Log);
 
                     var numSpawners = __instance.GetComponentsInChildren<Transform>(true)
                         .Where(t => t.name.Contains("headlight"))
@@ -52,6 +52,14 @@ namespace BetterHeadlights.Patches
                         .LastOrDefault(t => t.GetComponentInChildren<BTFlare>(true) != null)
                         ?.GetComponentInChildren<LightSpawner>(true);
 
+                    var btLights = __instance
+                        .GetComponentsInChildren<Transform>(true)
+                        .Where(t => t.name.Contains("headlight"))
+                        .Where(t => t.GetComponentInChildren<BTFlare>(true) != null)
+                        .Select(x => x.GetComponentInChildren<BTLight>())
+                        .ToList();
+
+                    btLights.Do(Log);
                     // also brittle
                     //lightSpawner = __instance
                     //    .GetComponentsInChildren<Transform>()
@@ -59,18 +67,23 @@ namespace BetterHeadlights.Patches
                     //    .FirstOrDefault(t => t.name.Contains("Torso"))
                     //    ?.GetComponentInChildren<LightSpawner>();
 
-                    if (lightSpawner != null)
+                    //if (lightSpawner != null)
+                    if (!btLights.Any())
                     {
                         // memoize headlights (should capture new spawns too)
-                        Log($"Configure ({lightSpawner}) - ({__instance.parentMech.DisplayName})");
-                        lightSpawner.spawnedLight.ConfigureLight();
-                        mechMap.Add(__instance.parentMech.GUID, lightSpawner);
+                        Log($"Configure ({btLights}) - ({__instance.parentMech.DisplayName})");
+                        //lightSpawner.spawnedLight.ConfigureLight();
+                        btLights.Do(x => x.ConfigureLight());
+                        mechMap.Add(__instance.parentMech.GUID, btLights);
                     }
                     else
                     {
-                        mechMap.Add(
-                            __instance.parentMech.GUID,
-                            new GameObject("BetterHeadlightsDummy").AddComponent<LightSpawner>());
+                        mechMap.Add(__instance.parentMech.GUID,
+                            new List<BTLight>
+                            {
+                                new GameObject("BetterHeadlightsDummy").AddComponent<BTLight>()
+                            });
+
                         return;
                     }
 
@@ -109,8 +122,11 @@ namespace BetterHeadlights.Patches
             // so hooking separately those is problematic because it repopulates with bad data
             // have to deal with it inline
 
-            lightSpawner = mechMap[__instance.parentMech.GUID];
-            if (lightSpawner.spawnedLight == null)
+
+            //lightSpawner = mechMap[__instance.parentMech.GUID];
+            //if (lightSpawner.spawnedLight == null)
+            var lights = mechMap[__instance.parentMech.GUID];
+            if (mechMap[__instance.parentMech.GUID][0] == null)
             {
                 Log(new string('>', 50) + " Invalid mechs in dictionary, clearing all data");
                 mechMap.Clear();
@@ -123,16 +139,21 @@ namespace BetterHeadlights.Patches
             if (__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam)
             {
                 // the goal being to do nothing unless necessary
-                if (lightSpawner.spawnedLight.enabled != headlightsOn)
+                //if (lightSpawner.spawnedLight.enabled != headlightsOn)
+                if (lights.Any(x => x.enabled != headlightsOn))
                 {
                     Log($"{__instance.parentMech.DisplayName} SetActive: " + headlightsOn);
-                    lightSpawner.spawnedLight.enabled = headlightsOn;
+                    Log(lights[0].gameObject.activeInHierarchy);
+                    //lightSpawner.spawnedLight.enabled = headlightsOn;
+                    lights.Do(x => x.enabled = headlightsOn);
                 }
+
+                lights.Do(x => x.ConfigureLight());
             }
 
             if (settings.BlipLights &&
                 !__instance.pilotRep.pilot.Team.LocalPlayerControlsTeam &&
-                lightSpawner.transform.gameObject.name != "BetterHeadlightsDummy")
+                lights.Any(x => x.transform.gameObject.name != "BetterHeadlightsDummy"))
             {
                 var localPlayerTeam = UnityGameInstance.BattleTechGame.Combat.LocalPlayerTeam;
                 var visibilityLevel = localPlayerTeam.VisibilityToTarget(__instance.parentActor);
@@ -140,17 +161,16 @@ namespace BetterHeadlights.Patches
                 {
                     try
                     {
-                        lightSpawner.spawnedLight.ConfigureLight();
-
-                        if (!lightSpawner.transform.parent.gameObject.activeSelf)
+                        //lightSpawner.spawnedLight.ConfigureLight();
+                        lights.Do(x =>
                         {
-                            lightSpawner.transform.parent.gameObject.SetActive(true);
-                        }
-
-                        if (!lightSpawner.spawnedLight.enabled)
-                        {
-                            lightSpawner.spawnedLight.enabled = true;
-                        }
+                            x.ConfigureLight();
+                            x.transform.parent.gameObject.SetActive(true);
+                            if (!x.enabled)
+                            {
+                                x.enabled = true;
+                            }
+                        });
                     }
                     catch (Exception ex)
                     {

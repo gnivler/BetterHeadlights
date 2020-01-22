@@ -17,7 +17,7 @@ namespace BetterHeadlights
     {
         internal static Settings settings;
         internal static bool headlightsOn = true;
-        internal static readonly Dictionary<string, LightSpawner> mechMap = new Dictionary<string, LightSpawner>();
+        internal static readonly Dictionary<string, List<BTLight>> mechMap = new Dictionary<string, List<BTLight>>();
         internal static readonly Dictionary<string, List<Transform>> vehicleMap = new Dictionary<string, List<Transform>>();
         internal static HarmonyInstance harmony;
 
@@ -48,7 +48,7 @@ namespace BetterHeadlights
 
         internal static void Log(object input)
         {
-            //FileLog.Log($"[BetterHeadlights] {input ?? "null"}");
+            FileLog.Log($"[BetterHeadlights] {input ?? "null"}");
         }
     }
 
