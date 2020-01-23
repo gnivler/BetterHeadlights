@@ -48,7 +48,7 @@ namespace BetterHeadlights
 
         internal static void Log(object input)
         {
-            FileLog.Log($"[BetterHeadlights] {input ?? "null"}");
+            //FileLog.Log($"[BetterHeadlights] {input ?? "null"}");
         }
     }
 
