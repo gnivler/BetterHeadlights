@@ -1,5 +1,6 @@
 using System;
 using BattleTech.Rendering;
+using HBS;
 using UnityEngine;
 using static BetterHeadlights.Core;
 using Object = UnityEngine.Object;
@@ -16,9 +17,6 @@ namespace BetterHeadlights
 
         internal static void ConfigureLight(this BTLight btLight, bool isVehicle = false)
         {
-            //Log($"{btLight.name} is type {btLight.lightType}");
-
- 
             if (settings.ExtraRange)
             {
                 btLight.radius = radius;

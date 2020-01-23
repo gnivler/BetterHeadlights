@@ -26,8 +26,7 @@ namespace BetterHeadlights.Patches
                 {
                     return;
                 }
-
-                //timer.Restart();
+                
                 if (!mechMap.ContainsKey(__instance.parentMech.GUID))
                 {
                     Log(new string('-', 80));
@@ -103,8 +102,6 @@ namespace BetterHeadlights.Patches
                     Log($"{__instance.parentMech.DisplayName} SetActive: " + headlightsOn);
                     lights.Do(x => x.enabled = headlightsOn);
                 }
-
-                lights.Do(x => x.ConfigureLight());
             }
 
             if (settings.BlipLights &&
@@ -114,14 +111,19 @@ namespace BetterHeadlights.Patches
                 var visibilityLevel = localPlayerTeam.VisibilityToTarget(__instance.parentActor);
                 if (visibilityLevel != VisibilityLevel.None)
                 {
+                    Log($"{__instance.parentMech.Nickname} is {visibilityLevel}");
                     try
                     {
                         lights
                             .Where(x => x.gameObject.name != "BetterHeadlightsDummy")
                             .Do(x =>
                             {
-                                //x.ConfigureLight();
-                                x.transform.parent.gameObject.SetActive(true);
+                                x.ConfigureLight();
+                                if (!x.transform.gameObject.activeInHierarchy)
+                                {
+                                    x.transform.parent.gameObject.SetActive(true);
+                                }
+
                                 if (!x.enabled)
                                 {
                                     x.enabled = true;
